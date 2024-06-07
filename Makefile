@@ -1,7 +1,7 @@
-build: ep1.exe
+debug: ep2d.exe
 
-ep2d.exe: EP2.c
-	gcc EP2.c -o ep2.exe
+ep2d.exe: ep2def.c
+	gcc ep2def.c -o ep2d.exe -g
 
 clean:
 	del *.exe

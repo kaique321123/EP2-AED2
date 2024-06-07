@@ -213,7 +213,7 @@ void leArquivo(char *arquivoEntrada, char *arquivoSaida, ArvBMais *arv)
     }
     fclose(entrada);
     fclose(saida);
-} 
+}
 
 int main(int argc, char *argv[])
 {
