@@ -126,11 +126,13 @@ void splitFilho(NO* x, int i, NO* y){
 	if((z = (NO*) malloc(sizeof(NO)))){
 		z->folha = y->folha;
 		z->numChaves = t-1 + y->folha;
-		
+
+		//copia metade das chaves de y para z
 		if(y->folha){
 			z->chave[1]=y->chave[t];
 			j=2;	
-		} 
+		}
+		//
 		else{
 			j=1;	
 		} 
