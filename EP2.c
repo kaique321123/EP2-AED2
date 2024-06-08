@@ -30,12 +30,12 @@ void insereNaoCheia(NO* x, int k); //feito
 void insereArvore(ArvBMais* arv, int k); //feito
 NO* achaPredecessor(NO* y); //feito
 NO* achaSucessor(NO* y); //feito
-int retornaPosicaoK(NO* x, int k);
-NO* encontraSubArvore(NO* x, int k);
-void removeChave(NO* x, int k);
-void removeNo(NO* x, int k);
-void removeRaiz(ArvBMais* arv, int k);
-void removeArvore(ArvBMais* arv, int k);
+int retornaPosicaoK(NO* x, int k); //feito
+NO* encontraSubArvore(NO* x, int k); //feito
+void removeChave(NO* x, int k); //feito
+void removeNo(NO* x, int k); //tem que terminar
+void removeRaiz(ArvBMais* arv, int k); //feito
+void removeArvore(ArvBMais* arv, int k); //feito
 
 
 

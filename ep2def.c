@@ -8,6 +8,7 @@
 
 typedef int TipoChave;
 
+int posSubArvore = 0;
 typedef struct s
 {
     TipoChave chave[MAX_CHAVE];   // num de chaves
@@ -176,6 +177,129 @@ NO *encontrarSucessor(NO *x, int i)
     }
     return y;
 }
+
+int retornaPos(NO *x, int i)
+{
+    int j = x->numChaves;
+    while (j >= 1)
+    {
+        if (i == x->chave[i])
+        {
+            return i;
+        }
+        j--;
+    }
+    return -1;
+}
+
+NO *encontraSubArv(NO *x, int i)
+{
+    NO *subArv = NULL;
+    int j = 1;
+
+    while (j < x->numChaves)
+    {
+        if (i < x->chave[i])
+        {
+            subArv = x->chave[i];
+            posSubArvore = i;
+            return subArv;
+        }
+        else if (i == x->chave[i] || (i > x->chave[i] && i == x->numChaves))
+        {
+            subArv = x->filhos[i + 1];
+            posSubArvore = i + 1;
+            return subArv;
+        }
+        else
+        {
+            j++;
+        }
+    }
+}
+
+void removeCh(NO *x, int ch)
+{
+    int pos = retornaPos(x, ch);
+    int i;
+    if (pos == x->numChaves)
+    {
+        x->numChaves--;
+    }
+    else
+    {
+        for (i = 0; i < x->numChaves; i++)
+        {
+            x->chave[i] = x->chave[i + 1];
+        }
+        x->numChaves--;
+    }
+}
+
+
+void removeRaiz(ArvBMais *arv, int i)
+{
+    NO *raiz = arv->raiz;
+    if (raiz->numChaves == 0)
+    {
+        return;
+    }
+    else
+    {
+        removeNo(raiz, i);
+    }
+    if (raiz->numChaves == 0 && !(raiz->folha))
+    {
+        arv->raiz = raiz->filhos[1];
+        free(raiz);
+    }
+}
+
+/*
+Caso 1: Remoção de uma chave de uma folha
+Caso 2: Redistribuição de chaves
+Caso 3: Fusão de nós
+Caso 4: Remoção de uma chave de um nó interno
+Caso 5: Manutenção da raiz
+*/
+
+// terminar ainda
+void removeNo(NO *x, int i)
+{
+    int pos = retornaPos(x, i);
+    int j;
+
+    // caso 1
+    if (x->folha && pos == -1)
+    {
+        return;
+    }
+    // caso 2
+    else if (x->folha && pos != -1)
+    {
+        removeCh(x, i);
+    }
+}
+
+void removeArv(ArvBMais *arv, int i)
+{
+
+    bool excluido = false;
+    for (int j = 1; j <= arv->raiz->numChaves; j++)
+    {
+        if (arv->raiz->chave[j] == i)
+        {
+            removeRaiz(arv, i);
+            excluido = true;
+        }
+    }
+    if (!excluido)
+    {
+        removeNo(arv->raiz, i);
+    }
+}
+
+
 void leArquivo(char *arquivoEntrada, char *arquivoSaida, ArvBMais *arv)
 {
     char op;
