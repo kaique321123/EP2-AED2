@@ -263,7 +263,7 @@ Caso 4: Remoção de uma chave de um nó interno
 Caso 5: Manutenção da raiz
 */
 
-// terminar ainda
+
 void removeNo(NO *x, int i)
 {
     int pos = retornaPos(x, i);
@@ -320,7 +320,7 @@ void leArquivo(char *arquivoEntrada, char *arquivoSaida, ArvBMais *arv)
                 break;
             // Remover
             case 'r':
-                removerArvore(arv, ch);
+                removeArv(arv, ch);
                 break;
             // Buscar
             case 'p':
