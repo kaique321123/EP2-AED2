@@ -21,21 +21,6 @@ typedef struct
     NO *raiz;
 } ArvBMais;
 
-int main(int argc, char *argv[]);
-void leArquivo(char *arquivoEntrada, char *arquivoSaida, ArvBMais *arv);
-void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida); //certo
-bool criarArvore(ArvBMais *arv); //certo
-void split(NO* x, int i, NO* y); //certo
-void inserirNoNaoCheio(NO *x, TipoChave k); //feito
-void inserirArvore(ArvBMais *arv, TipoChave k); //feito
-NO *encontrarPredecessor(NO *y); //feito
-NO *encontrarSucessor(NO *y); //feito
-int retornaPos(NO *x, int i); //feito
-NO *encontraSubArv(NO *x, int i); //feito
-void removeCh(NO *x, int ch); //feito
-void removeNo(NO *x, int k);
-void removeRaiz(ArvBMais *arv, int i); //feito
-void removeArv(ArvBMais *arv, int i); //feito
 
 bool criarArvore(ArvBMais *arv)
 {
@@ -119,59 +104,44 @@ void imprimirArvore(ArvBMais* arv, NO* x, FILE* saida){
 }
 
 void inserirNoNaoCheio(NO* x, int k)
-{
-    int i = x->numChaves;
-
-    if (x->folha)
-    {
-        while (i >= 1 && k < x->chave[i])
-        {
-            x->chave[i + 1] = x->chave[i];
+{int i = x->numChaves;
+    if(x->folha){
+        while(i>=1 && k<x->chave[i]){
+            x->chave[i+1] = x->chave[i];
             i--;
         }
-        x->chave[i + 1] = k;
+        x->chave[i+1] = k;
         x->numChaves++;
     }
-    else
-    {
-        while (i >= 1 && k < x->chave[i])
-        {
+    else{
+        while(i>=1 && k<x->chave[i]){
             i--;
         }
         i++;
-        if (x->filhos[i]->numChaves == 2*t-1)
-        {
+        if(x->filhos[i]->numChaves == 2*t-1){
             split(x, i, x->filhos[i]);
-            if (k > x->chave[i])
-            {
+            if(k>x->chave[i])
                 i++;
-            }
         }
         inserirNoNaoCheio(x->filhos[i], k);
     }
 }
 
-void inserirArvore(ArvBMais *arv, TipoChave k)
-{
-    NO *raiz = arv->raiz;
-    NO *s;
-    int i;
-
-    if (raiz->numChaves == 2*t-1)
-    {
-        if((s = (NO *)malloc(sizeof(NO)))){
-        s->folha = false;
-        s->numChaves = 0;
-        s->filhos[1] = raiz;
-        arv->raiz = s;
-        split(s, 1, raiz);
-        inserirNoNaoCheio(s, k);
-    }
+void inserirArvore(ArvBMais *arv, int k)
+{NO* raiz = arv->raiz;
+    NO* s;
+    if(raiz->numChaves==2*t-1){
+        if((s = (NO*)malloc(sizeof(NO)))){
+            arv->raiz=s;
+            s->folha=false;
+            s->numChaves=0;
+            s->filhos[1]=raiz;
+            split(s, 1, raiz);
+            inserirNoNaoCheio(s, k);
+        }
     }
     else
-    {
         inserirNoNaoCheio(raiz, k);
-    }
 }
 
 NO *encontrarPredecessor(NO *y)
@@ -188,66 +158,52 @@ NO *encontrarSucessor(NO *y)
     return y;
 }
 
-int retornaPos(NO *x, int i)
+int retornaPos(NO* x, int k)
 {
-    int j = x->numChaves;
-    while (j >= 1)
-    {
-        if (i == x->chave[i])
-        {
+    int i=x->numChaves;
+    while(i>=1){
+        if(k==x->chave[i])
             return i;
-        }
-        j--;
+        i--;
     }
     return -1;
 }
 
-NO *encontraSubArv(NO *x, int i)
-{
-    NO *subArv = NULL;
-    int j = 1;
-
-    while (j < x->numChaves)
-    {
-        if (i < x->chave[j])
-        {
-            subArv = x->filhos[j];
-            posSubArvore = j;
-            return subArv;
+NO *encontraSubArv(NO* x, int k){
+    NO* subArvore=NULL;
+    int i = 1;
+    while(i<=x->numChaves){
+        if(k < x->chave[i]){
+            subArvore = x->filhos[i];
+            posSubArvore = i;
+            return subArvore;
         }
-        else if (i == x->chave[j] || (j > x->chave[j] && j == x->numChaves))
-        {
-            subArv = x->filhos[j + 1];
-            posSubArvore = j + 1;
-            return subArv;
+        else if(k == x->chave[i] || (k > x->chave[i] && i == x->numChaves)){
+            subArvore = x->filhos[i+1];
+            posSubArvore = i+1;
+            return subArvore;
         }
         else
-        {
-            j++;
-        }
+            i++;
     }
-    return subArv;
+    return subArvore;
 }
 
-void removeCh(NO *x, int ch)
-{
-    int pos = retornaPos(x, ch);
-    int i;
-    if (pos == x->numChaves)
-    {
+void removeCh(NO* x, int k){
+    int posicao = retornaPos(x, k);
+    int j;
+    if(posicao == x->numChaves){
         x->numChaves--;
     }
-    else
-    {
-        for (i = pos; i < x->numChaves; i++)
-        {
-            x->chave[i] = x->chave[i + 1];
+    else{
+        for(j=posicao; j<x->numChaves; j++){
+            x->chave[j] = x->chave[j+1];
         }
         x->numChaves--;
     }
 }
 
-void removeNo(NO *x, int k)
+void removeNo(NO* x, int k)
 {
     int posicaoK = retornaPos(x, k);
     int j;
@@ -472,49 +428,29 @@ void removeNo(NO *x, int k)
     }
 }
 
-void removeRaiz(ArvBMais *arv, int i)
-{
-    NO *raiz = arv->raiz;
-    if (raiz->numChaves == 0)
-    {
-        return;
-    }
+void removeRaiz(ArvBMais* arv, int k){
+    NO* r = arv->raiz;
+    if(r->numChaves == 0) return;
     else
-    {
-        removeNo(raiz, i);
-    }
-    if (raiz->numChaves == 0 && !(raiz->folha))
-    {
-        arv->raiz = raiz->filhos[1];
-        free(raiz);
+        removeNo(r, k);
+    if(r->numChaves==0 && !r->folha){
+        arv->raiz=r->filhos[1];
+        free(r);
     }
 }
 
-/*
-Caso 1: Remoção de uma chave de uma folha
-Caso 2: Redistribuição de chaves
-Caso 3: Fusão de nós
-Caso 4: Remoção de uma chave de um nó interno
-Caso 5: Manutenção da raiz
-*/
-
-void removeArv(ArvBMais *arv, int i)
+void removeArv(ArvBMais* arv, int k)
 {
-
-    int j;
-    bool excluido = false;
-    for (j = 1; j <= arv->raiz->numChaves; j++)
-    {
-        if (arv->raiz->chave[j] == i)
-        {
-            removeRaiz(arv, i);
-            excluido = true;
+    int i;
+    bool excluido=false;
+    for(i=1;i<=arv->raiz->numChaves; i++){
+        if(arv->raiz->chave[i] == k){
+            removeRaiz(arv, k);
+            excluido=true;
         }
     }
-    if (!excluido)
-    {
-        removeNo(arv->raiz, i);
-    }
+    if(!excluido) removeNo(arv->raiz, k);
+
 }
 
 void leArquivo(char *arquivoEntrada, char *arquivoSaida, ArvBMais *arv)
