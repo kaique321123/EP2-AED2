@@ -21,6 +21,22 @@ typedef struct
     NO *raiz;
 } ArvBMais;
 
+int main(int argc, char *argv[]);
+void leArquivo(char *arquivoEntrada, char *arquivoSaida, ArvBMais *arv);
+void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida); //certo
+bool criarArvore(ArvBMais *arv); //certo
+void split(NO* x, int i, NO* y); //certo
+void inserirNoNaoCheio(NO *x, TipoChave k); //feito
+void inserirArvore(ArvBMais *arv, TipoChave k); //feito
+NO *encontrarPredecessor(NO *y); //feito
+NO *encontrarSucessor(NO *y); //feito
+int retornaPos(NO *x, int i); //feito
+NO *encontraSubArv(NO *x, int i); //feito
+void removeCh(NO *x, int ch); //feito
+void removeNo(NO *x, int k);
+void removeRaiz(ArvBMais *arv, int i); //feito
+void removeArv(ArvBMais *arv, int i); //feito
+
 bool criarArvore(ArvBMais *arv)
 {
     NO *novo = (NO *)malloc(sizeof(NO));
@@ -30,102 +46,103 @@ bool criarArvore(ArvBMais *arv)
     return true;
 }
 
-void split(NO *pai, int i, NO *filho)
-{
-
+void split(NO* x, int i, NO* y){
     int j;
-    NO *novo;
+    NO* z;
+    if((z = (NO*) malloc(sizeof(NO)))){
+        z->folha = y->folha;
+        z->numChaves = t-1 + y->folha;
 
-    if (novo = (NO *)malloc(sizeof(NO)))
-    {
-        novo->folha = filho->folha;
-        novo->numChaves = t - 1 + filho->numChaves;
-
-        if (filho->folha)
-        {
-            // copia metade das chaves de filho para novo
-            novo->chave[1] = filho->chave[t];
-
-            j = 2;
+        //copia metade das chaves de y para z
+        if(y->folha){
+            z->chave[1]=y->chave[t];
+            j=2;
         }
-        else
-        {
-            j = 1;
+        //
+        else{
+            j=1;
         }
 
-        for (j; j < t - 1 + filho->folha; j++)
-        {
-            if (filho->folha)
-            {
-                novo->chave[j] = filho->chave[j + t - 1];
-            }
-            else
-            {
-                pai->chave[j] = filho->chave[j + t];
-            }
-            if (!filho->folha)
-            {
-                for (j = 1; j <= t; j++)
-                    novo->filhos[j] = filho->filhos[j + t];
-            }
-            filho->numChaves = t - 1;
-            for (j = pai->numChaves + 1; j > i; j--)
-                pai->filhos[j + 1] = pai->filhos[j];
+        for(j; j <= t-1+y->folha; j++){
+            if(y->folha) z->chave[j]=y->chave[j+t-1];
+            else z->chave[j] = y->chave[j+t];
 
-            pai->filhos[i + 1] = novo;
-            for (j = pai->numChaves + 1; j >= i; j--)
-                pai->chave[j + 1] = pai->chave[j];
         }
-        pai->chave[i] = filho->chave[t];
-        pai->numChaves++;
+
+        if(!y->folha){
+            for(j=1; j<=t; j++)
+                z->filhos[j] = y->filhos[j+t];
+        }
+
+        y->numChaves = t-1;
+
+        for(j=x->numChaves+1; j>=i+1; j--){
+            x->filhos[j+1] = x->filhos[j];
+        }
+
+        x->filhos[i+1]=z;
+
+        for(j=x->numChaves+1;j>=i;j--){
+            x->chave[j+1]=x->chave[j];
+        }
+
+        x->chave[i]=y->chave[t];
+        x->numChaves++;
     }
 }
 
-void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida)
-{
-    if (x == NULL)
-    {
+void imprimirArvore(ArvBMais* arv, NO* x, FILE* saida){
+    int i;
+    if(x->numChaves==0 && x==arv->raiz){
+        fprintf(saida, "Vazia");
         return;
     }
 
     fprintf(saida, "(");
-
-    for (int i = 0; i < x->numChaves; i++)
-    {
-        imprimirArvore(arv, x->filhos[i], saida);
-        fprintf(saida, " %d ", x->chave[i]);
+    if(x->folha){
+        for(i=1; i<=x->numChaves; i++){
+            if(i==x->numChaves)
+                fprintf(saida, "%d", x->chave[i]);
+            else
+                fprintf(saida, "%d ", x->chave[i]);
+        }
     }
-
-    imprimirArvore(arv, x->filhos[x->numChaves], saida);
+    else{
+        for(i=1; i<=x->numChaves; i++){
+            imprimirArvore(arv, x->filhos[i], saida);
+            fprintf(saida, " %d ", x->chave[i]);
+        }
+        imprimirArvore(arv, x->filhos[i], saida);
+    }
 
     fprintf(saida, ")");
 }
 
-void inserirNoNaoCheio(NO *x, TipoChave k)
+void inserirNoNaoCheio(NO* x, int k)
 {
     int i = x->numChaves;
 
     if (x->folha)
     {
-        while (i >= 1 && k < x->chave[i - 1])
+        while (i >= 1 && k < x->chave[i])
         {
-            x->chave[i] = x->chave[i - 1];
+            x->chave[i + 1] = x->chave[i];
             i--;
         }
-        x->chave[i] = k;
+        x->chave[i + 1] = k;
         x->numChaves++;
     }
     else
     {
-        while (i >= 1 && k < x->chave[i - 1])
+        while (i >= 1 && k < x->chave[i])
         {
             i--;
         }
         i++;
-        if (x->filhos[i]->numChaves == MAX_CHAVE)
+        if (x->filhos[i]->numChaves == 2*t-1)
         {
             split(x, i, x->filhos[i]);
-            if (k > x->chave[i - 1])
+            if (k > x->chave[i])
             {
                 i++;
             }
@@ -136,23 +153,24 @@ void inserirNoNaoCheio(NO *x, TipoChave k)
 
 void inserirArvore(ArvBMais *arv, TipoChave k)
 {
-    NO *r = arv->raiz;
+    NO *raiz = arv->raiz;
     NO *s;
     int i;
 
-    if (r->numChaves == MAX_CHAVE)
+    if (raiz->numChaves == 2*t-1)
     {
-        s = (NO *)malloc(sizeof(NO));
+        if((s = (NO *)malloc(sizeof(NO)))){
         s->folha = false;
         s->numChaves = 0;
-        s->filhos[0] = r;
+        s->filhos[1] = raiz;
         arv->raiz = s;
-        split(s, 0, r);
+        split(s, 1, raiz);
         inserirNoNaoCheio(s, k);
+    }
     }
     else
     {
-        inserirNoNaoCheio(r, k);
+        inserirNoNaoCheio(raiz, k);
     }
 }
 
@@ -191,16 +209,16 @@ NO *encontraSubArv(NO *x, int i)
 
     while (j < x->numChaves)
     {
-        if (i < x->chave[i])
+        if (i < x->chave[j])
         {
-            subArv = x->filhos[i];
-            posSubArvore = i;
+            subArv = x->filhos[j];
+            posSubArvore = j;
             return subArv;
         }
-        else if (i == x->chave[i] || (i > x->chave[i] && i == x->numChaves))
+        else if (i == x->chave[j] || (j > x->chave[j] && j == x->numChaves))
         {
-            subArv = x->filhos[i + 1];
-            posSubArvore = i + 1;
+            subArv = x->filhos[j + 1];
+            posSubArvore = j + 1;
             return subArv;
         }
         else
@@ -208,6 +226,7 @@ NO *encontraSubArv(NO *x, int i)
             j++;
         }
     }
+    return subArv;
 }
 
 void removeCh(NO *x, int ch)
@@ -220,7 +239,7 @@ void removeCh(NO *x, int ch)
     }
     else
     {
-        for (i = 0; i < x->numChaves; i++)
+        for (i = pos; i < x->numChaves; i++)
         {
             x->chave[i] = x->chave[i + 1];
         }
@@ -482,8 +501,9 @@ Caso 5: Manutenção da raiz
 void removeArv(ArvBMais *arv, int i)
 {
 
+    int j;
     bool excluido = false;
-    for (int j = 1; j <= arv->raiz->numChaves; j++)
+    for (j = 1; j <= arv->raiz->numChaves; j++)
     {
         if (arv->raiz->chave[j] == i)
         {
@@ -500,24 +520,28 @@ void removeArv(ArvBMais *arv, int i)
 void leArquivo(char *arquivoEntrada, char *arquivoSaida, ArvBMais *arv)
 {
     char op;
-    int ch;
+    int valor;
 
-    FILE *entrada = fopen(arquivoEntrada, "r");
-    FILE *saida = fopen(arquivoSaida, "w");
+    FILE *entrada = NULL;
+    entrada = fopen(arquivoEntrada, "r");
+    FILE *saida = NULL;
+    saida = fopen(arquivoSaida, "w");
 
-    if (entrada && criarArvore(arv))
+    bool arvoreCriada = criarArvore(arv);
+
+    if (entrada && arvoreCriada)
     {
-        while (fscanf(entrada, "%c %d", &op, &ch) != EOF)
+        while (fscanf(entrada, "%c %d", &op, &valor) != EOF)
         {
             switch (op)
             {
             // Inserir
             case 'i':
-                inserirArvore(arv, ch);
+                inserirArvore(arv, valor);
                 break;
             // Remover
             case 'r':
-                removeArv(arv, ch);
+                removeArv(arv, valor);
                 break;
             // Buscar
             case 'p':
@@ -526,9 +550,8 @@ void leArquivo(char *arquivoEntrada, char *arquivoSaida, ArvBMais *arv)
                 break;
             // Finalizar
             case 'f':
-                fclose(entrada);
-                fclose(saida);
                 return;
+                break;
             }
         }
     }
