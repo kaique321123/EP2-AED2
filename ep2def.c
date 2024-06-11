@@ -3,19 +3,17 @@
 #include <stdbool.h>
 
 #define t 3
-#define MAX_CHAVE 2 * t - 1
-#define MAX_FILHOS 2 * t
 
 typedef int TipoChave;
 
 int posSubArvore = 0;
 typedef struct s
 {
-    TipoChave chave[MAX_CHAVE];   // num de chaves
-    struct s *filhos[MAX_FILHOS]; // num de filhos
-    int numChaves;                // num de chaves
-    bool folha;                   // true se for folha
-    struct s *proxFolha;          // prox folha
+    TipoChave chave[2 * t - 1]; // num de chaves
+    struct s *filhos[2 * t];    // num de filhos
+    int numChaves;              // num de chaves
+    bool folha;                 // true se for folha
+    struct s *proxFolha;        // prox folha
 } NO;
 
 typedef struct
@@ -158,23 +156,17 @@ void inserirArvore(ArvBMais *arv, TipoChave k)
     }
 }
 
-NO *encontrarPredecessor(NO *x, int i)
+NO *encontrarPredecessor(NO *y)
 {
-    NO *y = x->filhos[i];
-    while (!y->folha)
-    {
-        y = y->filhos[y->numChaves];
-    }
+    if (!y->folha)
+        encontrarPredecessor(y->filhos[y->numChaves + 1]);
     return y;
 }
 
-NO *encontrarSucessor(NO *x, int i)
+NO *encontrarSucessor(NO *y)
 {
-    NO *y = x->filhos[i + 1];
-    while (!y->folha)
-    {
-        y = y->filhos[0];
-    }
+    if (!y->folha)
+        encontrarSucessor(y->filhos[1]);
     return y;
 }
 
@@ -201,7 +193,7 @@ NO *encontraSubArv(NO *x, int i)
     {
         if (i < x->chave[i])
         {
-            subArv = x->chave[i];
+            subArv = x->filhos[i];
             posSubArvore = i;
             return subArv;
         }
@@ -236,6 +228,230 @@ void removeCh(NO *x, int ch)
     }
 }
 
+void removeNo(NO *x, int k)
+{
+    int posicaoK = retornaPos(x, k);
+    int j;
+
+    // Caso 0
+    if (x->folha && posicaoK == -1)
+        return;
+
+    // Caso 1
+    else if (posicaoK != -1 && x->folha)
+    {
+        removeCh(x, k);
+    }
+
+    // Caso 2
+    else if (!x->folha && posicaoK != -1)
+    {
+        NO *y = x->filhos[posicaoK];
+        NO *z = x->filhos[posicaoK + 1];
+
+        if (y->numChaves >= t)
+        { // 2a
+            NO *predecessor = encontrarPredecessor(y);
+            x->chave[posicaoK] = predecessor->chave[predecessor->numChaves];
+
+            if (y->folha)
+            {
+                NO *sucessor = encontrarSucessor(z);
+                sucessor->chave[1] = x->chave[posicaoK];
+                z->filhos[1] = predecessor->filhos[predecessor->numChaves + 1];
+            }
+
+            removeNo(y, predecessor->chave[predecessor->numChaves]);
+        }
+        else if (z->numChaves >= t)
+        { // 2b
+
+            NO *sucessor = encontrarSucessor(z);
+            if (z->folha)
+            {
+                x->chave[posicaoK] = sucessor->chave[2];
+                removeNo(sucessor, sucessor->chave[1]);
+            }
+            else
+            {
+                x->chave[posicaoK] = sucessor->chave[1];
+                removeNo(sucessor, sucessor->chave[1]);
+            }
+        }
+        else
+        { // 2c
+            int i = 1;
+            for (i; i < z->numChaves; i++)
+            {
+                z->chave[i] = z->chave[i + 1];
+            }
+            i = 1;
+            for (i; i <= z->numChaves; i++)
+            {
+                z->chave[i] = z->chave[i + 1];
+            }
+            z->numChaves--;
+
+            y->numChaves++;
+            y->chave[y->numChaves] = k;
+
+            int posAtualZ = 1;
+
+            y->numChaves++;
+            j = y->numChaves;
+            if (!y->folha)
+            {
+                y->chave[j] = x->chave[posicaoK];
+                j = y->numChaves + 1;
+            }
+            while (j < 2 * t - 1)
+            {
+                y->chave[j] = z->chave[posAtualZ];
+                j++;
+                posAtualZ++;
+            }
+
+            for (j = posicaoK; j <= x->numChaves; j++)
+            {
+                x->chave[j] = x->chave[j + 1];
+            }
+            for (j = posicaoK + 1; j <= x->numChaves + 1; j++)
+            {
+                x->filhos[j] = x->filhos[j + 1];
+            }
+            x->numChaves--;
+
+            free(z);
+            removeNo(y, k);
+        }
+    }
+
+    // Caso 3
+    else if (!x->folha && posicaoK == -1)
+    {
+        int i = 1;
+        int j;
+        NO *subArvore = encontraSubArv(x, k);
+
+        if (!subArvore)
+            return;
+
+        if (subArvore->numChaves == t - 1)
+        {
+
+            if (posSubArvore + 1 < x->numChaves + 1 && x->filhos[posSubArvore + 1]->numChaves >= t)
+            { // 3a1
+                subArvore->numChaves++;
+                subArvore->chave[subArvore->numChaves] = x->chave[posSubArvore];
+                subArvore->filhos[subArvore->numChaves + 1] = x->filhos[posSubArvore + 1]->filhos[1];
+                int aux;
+                for (aux = 1; aux < x->filhos[posSubArvore + 1]->numChaves; aux++)
+                    x->filhos[posSubArvore + 1]->chave[aux] = x->filhos[posSubArvore + 1]->chave[aux + 1];
+                for (aux = 1; aux <= x->filhos[posSubArvore + 1]->numChaves; aux++)
+                    x->filhos[posSubArvore + 1]->filhos[aux + 1] = x->filhos[posSubArvore + 1]->filhos[aux];
+                x->filhos[posSubArvore + 1]->numChaves--;
+                x->chave[posSubArvore] = x->filhos[posSubArvore + 1]->chave[1];
+            }
+            else if (posSubArvore > 1 && x->filhos[posSubArvore - 1]->numChaves >= t)
+            { // 3a2
+                int ant = x->filhos[posSubArvore - 1]->chave[x->filhos[posSubArvore - 1]->numChaves];
+                x->chave[posSubArvore - 1] = ant;
+                x->filhos[posSubArvore - 1]->numChaves--;
+                subArvore->numChaves++;
+                int aux;
+                for (aux = subArvore->numChaves; aux >= 1; aux--)
+                    subArvore->chave[aux] = subArvore->chave[aux - 1];
+                if (x->filhos[posSubArvore + 1])
+                    subArvore->chave[1] = x->chave[posSubArvore - 1];
+                aux = subArvore->numChaves + 1;
+                for (aux; aux <= 2; aux--)
+                    subArvore->filhos[aux] = subArvore->filhos[aux - 1];
+
+                if (x->filhos[posSubArvore + 1])
+                    subArvore->filhos[1] = x->filhos[posSubArvore - 1]->filhos[x->filhos[posSubArvore - 1]->numChaves + 1];
+            }
+            else if (x->filhos[posSubArvore - 1]->numChaves == t - 1 && x->filhos[posSubArvore + 1]->numChaves == t - 1)
+            { // 3b
+                if (posSubArvore - 1 >= 1)
+                {
+                    int numArvAnterior = x->filhos[posSubArvore - 1]->numChaves;
+                    int auxAtual = numArvAnterior + 1;
+                    int auxProx = 1;
+
+                    x->filhos[posSubArvore - 1]->numChaves += subArvore->numChaves;
+
+                    while (auxProx <= subArvore->numChaves)
+                    {
+                        x->filhos[posSubArvore - 1]->chave[auxAtual] = subArvore->chave[auxProx];
+                        auxAtual++;
+                        auxProx++;
+                    }
+                    auxAtual = numArvAnterior;
+                    auxProx = 1;
+                    while (auxProx + 1 <= subArvore->numChaves + 1)
+                    {
+                        x->filhos[posSubArvore - 1]->filhos[auxAtual] = subArvore->filhos[auxProx];
+                        auxProx++;
+                        auxAtual++;
+                    }
+                    auxAtual = posSubArvore - 1;
+                    while (auxAtual + 1 <= x->numChaves)
+                    {
+                        x->chave[auxAtual] = x->chave[auxAtual + 1];
+                        auxAtual++;
+                    }
+                    auxAtual = posSubArvore;
+                    while (auxAtual + 1 <= x->numChaves + 1)
+                    {
+                        x->filhos[auxAtual] = x->filhos[auxAtual + 1];
+                        auxAtual++;
+                    }
+                    x->numChaves--;
+                    x->filhos[posSubArvore - 1]->numChaves--;
+                }
+                else if (posSubArvore + 1 <= x->numChaves + 1)
+                {
+                    int auxProx = 1;
+                    int numChavesSubArvoreOriginal = subArvore->numChaves;
+                    int auxAtual = subArvore->numChaves;
+                    subArvore->numChaves += x->filhos[posSubArvore + 1]->numChaves;
+                    while (auxProx <= x->filhos[posSubArvore + 1]->numChaves)
+                    {
+                        subArvore->chave[auxAtual] = x->filhos[posSubArvore + 1]->chave[auxProx];
+                        auxAtual++;
+                        auxProx++;
+                    }
+                    auxAtual = numChavesSubArvoreOriginal + 1;
+                    auxProx = 1;
+                    while (auxProx + 1 <= subArvore->numChaves + 1)
+                    {
+                        subArvore->filhos[auxAtual] = x->filhos[posSubArvore + 1]->filhos[auxProx];
+                        auxProx++;
+                        auxAtual++;
+                    }
+
+                    auxAtual = posSubArvore;
+                    while (auxAtual + 1 <= x->numChaves)
+                    {
+                        x->chave[auxAtual] = x->chave[auxAtual + 1];
+                        auxAtual++;
+                    }
+                    auxAtual = posSubArvore + 1;
+                    while (auxAtual + 1 <= x->numChaves + 1)
+                    {
+                        x->filhos[auxAtual] = x->filhos[auxAtual + 1];
+                        auxAtual++;
+                    }
+                    x->numChaves--;
+                    subArvore->numChaves--;
+                }
+            }
+            else
+                return;
+        }
+        removeNo(subArvore, k);
+    }
+}
 
 void removeRaiz(ArvBMais *arv, int i)
 {
@@ -263,24 +479,6 @@ Caso 4: Remoção de uma chave de um nó interno
 Caso 5: Manutenção da raiz
 */
 
-
-void removeNo(NO *x, int i)
-{
-    int pos = retornaPos(x, i);
-    int j;
-
-    // caso 1
-    if (x->folha && pos == -1)
-    {
-        return;
-    }
-    // caso 2
-    else if (x->folha && pos != -1)
-    {
-        removeCh(x, i);
-    }
-}
-
 void removeArv(ArvBMais *arv, int i)
 {
 
@@ -298,7 +496,6 @@ void removeArv(ArvBMais *arv, int i)
         removeNo(arv->raiz, i);
     }
 }
-
 
 void leArquivo(char *arquivoEntrada, char *arquivoSaida, ArvBMais *arv)
 {
