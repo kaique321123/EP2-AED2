@@ -16,72 +16,35 @@ typedef struct
 	NO *raiz;
 } ArvBMais;
 
-int main(int argc, char *argv[]);
-void leArquivo(ArvBMais *arv, char arquivoEntrada[], char arquivoSaida[]);
-void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida);
-bool criarArvore(ArvBMais *arv);
+// FUNÇÕES DE MANIPULAÇÃO DA ÁRVORE B+
+bool criarArvore(ArvBMais *arv); //feito
+void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida); //feito
+NO *encontrarPredecessor(NO *y); //feito
+NO *encontrarSucessor(NO *y);	//feito
+int retornarPosicao(NO *x, int k);	//feito
+NO *encontrarSubArvore(NO *x, int k);	//feito
 void split(NO *x, int i, NO *y);
 void inserirNCheia(NO *x, int k);
 void inserirArvore(ArvBMais *arv, int k);
-NO *encontrarPredecessor(NO *y);
-NO *encontrarSucessor(NO *y);
-int retornaPosicao(NO *x, int k);
-NO *encontraSubArvore(NO *x, int k);
 void removerChave(NO *x, int k);
 void removerNo(NO *x, int k);
 void removerRaiz(ArvBMais *arv, int k);
 void removerArvore(ArvBMais *arv, int k);
+void leArquivo(ArvBMais *arv, char arquivoEntrada[], char arquivoSaida[]);
+int main(int argc, char *argv[]);
+
 
 int posicaoSubArvore = 0;
 
-int main(int argc, char *argv[])
+bool criarArvore(ArvBMais *arv)
 {
-	if (argc != 3)
-	{
-		printf("Uso: %s arquivo_entrada.txt arquivo_saida.txt\n", argv[0]);
-		return 1;
-	}
-	ArvBMais arvore;
-	leArquivo(&arvore, argv[1], argv[2]);
-	return 0;
-}
-
-void leArquivo(ArvBMais *arv, char arquivoEntrada[], char arquivoSaida[])
-{
-	char operacao;
-	int valor;
-
-	FILE *entrada = NULL;
-	entrada = fopen(arquivoEntrada, "r");
-	FILE *saida = NULL;
-	saida = fopen(arquivoSaida, "w");
-
-	bool arvore = criarArvore(arv);
-
-	if (entrada && arvore)
-	{
-		while (fscanf(entrada, "%c %d", &operacao, &valor) != EOF)
-		{
-			switch (operacao)
-			{
-			case 'i':
-				inserirArvore(arv, valor);
-				break;
-			case 'r':
-				removerArvore(arv, valor);
-				break;
-			case 'p':
-				imprimirArvore(arv, arv->raiz, saida);
-				fprintf(saida, "\n");
-				break;
-			case 'f':
-				return;
-				break;
-			}
-		}
-	}
-	fclose(entrada);
-	fclose(saida);
+	NO *x;
+	if (!(x = (NO *)malloc(sizeof(NO))))
+		return false;
+	x->folha = true;
+	x->numChaves = 0;
+	arv->raiz = x;
+	return true;
 }
 
 void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida)
@@ -117,16 +80,56 @@ void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida)
 	fprintf(saida, ")");
 }
 
-bool criarArvore(ArvBMais *arv)
+NO *encontrarPredecessor(NO *y)
 {
-	NO *x;
-	if (!(x = (NO *)malloc(sizeof(NO))))
-		return false;
-	x->folha = true;
-	x->numChaves = 0;
-	arv->raiz = x;
-	return true;
+	if (!y->folha)
+		encontrarPredecessor(y->filhos[y->numChaves + 1]);
+	return y;
 }
+
+NO *encontrarSucessor(NO *y)
+{
+	if (!y->folha)
+		encontrarSucessor(y->filhos[1]);
+	return y;
+}
+
+int retornarPosicao(NO *x, int k)
+{
+	int i = x->numChaves;
+	while (i >= 1)
+	{
+		if (k == x->chave[i])
+			return i;
+		i--;
+	}
+	return -1;
+}
+
+NO *encontrarSubArvore(NO *x, int k)
+{
+	NO *subArvore = NULL;
+	int i = 1;
+	while (i <= x->numChaves)
+	{
+		if (k < x->chave[i])
+		{
+			subArvore = x->filhos[i];
+			posicaoSubArvore = i;
+			return subArvore;
+		}
+		else if (k == x->chave[i] || (k > x->chave[i] && i == x->numChaves))
+		{
+			subArvore = x->filhos[i + 1];
+			posicaoSubArvore = i + 1;
+			return subArvore;
+		}
+		else
+			i++;
+	}
+	return subArvore;
+}
+
 
 void split(NO *x, int i, NO *y)
 {
@@ -232,59 +235,9 @@ void inserirArvore(ArvBMais *arv, int k)
 		inserirNCheia(raiz, k);
 }
 
-NO *encontrarPredecessor(NO *y)
-{
-	if (!y->folha)
-		encontrarPredecessor(y->filhos[y->numChaves + 1]);
-	return y;
-}
-
-NO *encontrarSucessor(NO *y)
-{
-	if (!y->folha)
-		encontrarSucessor(y->filhos[1]);
-	return y;
-}
-
-int retornaPosicao(NO *x, int k)
-{
-	int i = x->numChaves;
-	while (i >= 1)
-	{
-		if (k == x->chave[i])
-			return i;
-		i--;
-	}
-	return -1;
-}
-
-NO *encontraSubArvore(NO *x, int k)
-{
-	NO *subArvore = NULL;
-	int i = 1;
-	while (i <= x->numChaves)
-	{
-		if (k < x->chave[i])
-		{
-			subArvore = x->filhos[i];
-			posicaoSubArvore = i;
-			return subArvore;
-		}
-		else if (k == x->chave[i] || (k > x->chave[i] && i == x->numChaves))
-		{
-			subArvore = x->filhos[i + 1];
-			posicaoSubArvore = i + 1;
-			return subArvore;
-		}
-		else
-			i++;
-	}
-	return subArvore;
-}
-
 void removerChave(NO *x, int k)
 {
-	int posicao = retornaPosicao(x, k);
+	int posicao = retornarPosicao(x, k);
 	int j;
 	if (posicao == x->numChaves)
 	{
@@ -302,7 +255,7 @@ void removerChave(NO *x, int k)
 
 void removerNo(NO *x, int k)
 {
-	int posicaoK = retornaPosicao(x, k);
+	int posicaoK = retornarPosicao(x, k);
 	int j;
 
 	// caso 0
@@ -403,7 +356,7 @@ void removerNo(NO *x, int k)
 	{
 		int i = 1;
 		int j;
-		NO *subArvore = encontraSubArvore(x, k);
+		NO *subArvore = encontrarSubArvore(x, k);
 
 		if (!subArvore)
 			return;
@@ -553,4 +506,59 @@ void removerArvore(ArvBMais *arv, int k)
 	}
 	if (!excluido)
 		removerNo(arv->raiz, k);
+}
+
+
+void leArquivo(ArvBMais *arv, char arquivoEntrada[], char arquivoSaida[])
+{
+	char operacao;
+	int valor;
+
+	FILE *entrada = NULL;
+	entrada = fopen(arquivoEntrada, "r");
+	FILE *saida = NULL;
+	saida = fopen(arquivoSaida, "w");
+
+	bool arvore = criarArvore(arv);
+
+	if (entrada && arvore)
+	{
+		while (fscanf(entrada, "%c %d", &operacao, &valor) != EOF)
+		{
+			switch (operacao)
+			{
+			//Imprimir
+			case 'i':
+				inserirArvore(arv, valor);
+				break;
+			//Remover
+			case 'r':
+				removerArvore(arv, valor);
+				break;
+			//Printar
+			case 'p':
+				imprimirArvore(arv, arv->raiz, saida);
+				fprintf(saida, "\n");
+				break;
+			
+			case 'f':
+				return;
+				break;
+			}
+		}
+	}
+	fclose(entrada);
+	fclose(saida);
+}
+
+int main(int argc, char *argv[])
+{
+	if (argc != 3)
+	{
+		printf("Uso: %s arquivo_entrada.txt arquivo_saida.txt\n", argv[0]);
+		return 1;
+	}
+	ArvBMais arvore;
+	leArquivo(&arvore, argv[1], argv[2]);
+	return 0;
 }
