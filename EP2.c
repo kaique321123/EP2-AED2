@@ -1,28 +1,36 @@
+// Nome: Kaique de Jesus Pessoa Santos
+// Nº USP: 14677144
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
+// Define a ordem mínima da árvore B+.
+// Cada nó pode ter no máximo 2t - 1 chaves e no mínimo t - 1 chaves.
 #define t 3
+
+#define MAX_CHAVE 2 * t - 1
+
 typedef struct str_no
 {
-	int chave[2 * t];
-	struct str_no *filhos[2 * t + 1];
-	int numChaves;
-	bool folha;
+	int chave[2 * t];				  // vetor de chaves
+	struct str_no *filhos[2 * t + 1]; // vetor de ponteiros para os filhos
+	int numChaves;					  // número de chaves armazenadas no nó
+	bool folha;						  // indica se o nó é folha
 } NO;
 
 typedef struct
 {
-	NO *raiz;
+	NO *raiz; // ponteiro para a raiz da árvore
 } ArvBMais;
 
 // FUNÇÕES DE MANIPULAÇÃO DA ÁRVORE B+
-bool criarArvore(ArvBMais *arv); //feito
-void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida); //feito
-NO *encontrarPredecessor(NO *y); //feito
-NO *encontrarSucessor(NO *y);	//feito
-int retornarPosicao(NO *x, int k);	//feito
-NO *encontrarSubArvore(NO *x, int k);	//feito
+bool criarArvore(ArvBMais *arv);
+void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida);
+NO *encontraFilhoDireito(NO *y);
+NO *encontraFilhoEsquerdo(NO *y);
+int retornarPosicao(NO *x, int k);
+NO *encontrarSubArvore(NO *x, int k);
 void split(NO *x, int i, NO *y);
 void inserirNCheia(NO *x, int k);
 void inserirArvore(ArvBMais *arv, int k);
@@ -33,7 +41,7 @@ void removerArvore(ArvBMais *arv, int k);
 void leArquivo(ArvBMais *arv, char arquivoEntrada[], char arquivoSaida[]);
 int main(int argc, char *argv[]);
 
-
+// Variável global que armazena a posição da sub-árvore.
 int posicaoSubArvore = 0;
 
 bool criarArvore(ArvBMais *arv)
@@ -52,11 +60,15 @@ void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida)
 	int i;
 	if (x->numChaves == 0 && x == arv->raiz)
 	{
+		// Caso a raiz seja vazia
+		// printf("Vazia\n")
 		fprintf(saida, "Vazia");
 		return;
 	}
 
 	fprintf(saida, "(");
+
+	// Se o nó for um nó folha
 	if (x->folha)
 	{
 		for (i = 1; i <= x->numChaves; i++)
@@ -71,6 +83,7 @@ void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida)
 	{
 		for (i = 1; i <= x->numChaves; i++)
 		{
+			// Imprime a sub-árvore à esquerda da chave.
 			imprimirArvore(arv, x->filhos[i], saida);
 			fprintf(saida, " %d ", x->chave[i]);
 		}
@@ -80,20 +93,21 @@ void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida)
 	fprintf(saida, ")");
 }
 
-NO *encontrarPredecessor(NO *y)
+NO *encontraFilhoDireito(NO *y)
 {
 	if (!y->folha)
-		encontrarPredecessor(y->filhos[y->numChaves + 1]);
+		encontraFilhoDireito(y->filhos[y->numChaves + 1]);
 	return y;
 }
 
-NO *encontrarSucessor(NO *y)
+NO *encontraFilhoEsquerdo(NO *y)
 {
 	if (!y->folha)
-		encontrarSucessor(y->filhos[1]);
+		encontraFilhoEsquerdo(y->filhos[1]);
 	return y;
 }
 
+// Retorna a posição da chave k no nó x
 int retornarPosicao(NO *x, int k)
 {
 	int i = x->numChaves;
@@ -130,7 +144,7 @@ NO *encontrarSubArvore(NO *x, int k)
 	return subArvore;
 }
 
-
+// Função que divide o nó y e move a chave mediana para o nó x
 void split(NO *x, int i, NO *y)
 {
 	int j;
@@ -140,21 +154,24 @@ void split(NO *x, int i, NO *y)
 		z->folha = y->folha;
 		z->numChaves = t - 1 + y->folha;
 
-		// copia metade das chaves de y para z
+		// Copia as chaves de y para z
+		// Se y for folha
 		if (y->folha)
 		{
 			z->chave[1] = y->chave[t];
 			j = 2;
 		}
-		//
+		// Se y não for folha
 		else
 		{
 			j = 1;
 		}
 
 		for (j; j <= t - 1 + y->folha; j++)
-		{
+		{	
 			if (y->folha)
+
+				// Copia as chaves de y para z
 				z->chave[j] = y->chave[j + t - 1];
 			else
 				z->chave[j] = y->chave[j + t];
@@ -163,6 +180,7 @@ void split(NO *x, int i, NO *y)
 		if (!y->folha)
 		{
 			for (j = 1; j <= t; j++)
+				// Copia os filhos de y para z				
 				z->filhos[j] = y->filhos[j + t];
 		}
 
@@ -185,6 +203,7 @@ void split(NO *x, int i, NO *y)
 	}
 }
 
+// Função que insere a chave k no nó x se a árvore não estiver cheia
 void inserirNCheia(NO *x, int k)
 {
 	int i = x->numChaves;
@@ -205,7 +224,9 @@ void inserirNCheia(NO *x, int k)
 			i--;
 		}
 		i++;
-		if (x->filhos[i]->numChaves == 2 * t - 1)
+
+		// Verifica se o nó filho está cheio
+		if (x->filhos[i]->numChaves == MAX_CHAVE)
 		{
 			split(x, i, x->filhos[i]);
 			if (k > x->chave[i])
@@ -215,11 +236,14 @@ void inserirNCheia(NO *x, int k)
 	}
 }
 
+// Função que insere a chave k na árvore B+
 void inserirArvore(ArvBMais *arv, int k)
 {
 	NO *raiz = arv->raiz;
 	NO *s;
-	if (raiz->numChaves == 2 * t - 1)
+
+	// Caso a raiz esteja cheia
+	if (raiz->numChaves == MAX_CHAVE)
 	{
 		if ((s = (NO *)malloc(sizeof(NO))))
 		{
@@ -235,10 +259,12 @@ void inserirArvore(ArvBMais *arv, int k)
 		inserirNCheia(raiz, k);
 }
 
+// Função que remove a chave k do nó x
 void removerChave(NO *x, int k)
 {
 	int posicao = retornarPosicao(x, k);
 	int j;
+
 	if (posicao == x->numChaves)
 	{
 		x->numChaves--;
@@ -274,24 +300,26 @@ void removerNo(NO *x, int k)
 		NO *y = x->filhos[posicaoK];
 		NO *z = x->filhos[posicaoK + 1];
 
+		// 2a
 		if (y->numChaves >= t)
-		{ // 2a
-			NO *predecessor = encontrarPredecessor(y);
+		{
+			NO *predecessor = encontraFilhoDireito(y);
 			x->chave[posicaoK] = predecessor->chave[predecessor->numChaves];
 
 			if (y->folha)
 			{
-				NO *sucessor = encontrarSucessor(z);
+				NO *sucessor = encontraFilhoEsquerdo(z);
 				sucessor->chave[1] = x->chave[posicaoK];
 				z->filhos[1] = predecessor->filhos[predecessor->numChaves + 1];
 			}
 
 			removerNo(y, predecessor->chave[predecessor->numChaves]);
 		}
+		// 2b
 		else if (z->numChaves >= t)
-		{ // 2b
+		{
 
-			NO *sucessor = encontrarSucessor(z);
+			NO *sucessor = encontraFilhoEsquerdo(z);
 			if (z->folha)
 			{
 				x->chave[posicaoK] = sucessor->chave[2];
@@ -303,8 +331,9 @@ void removerNo(NO *x, int k)
 				removerNo(sucessor, sucessor->chave[1]);
 			}
 		}
+		// 2c
 		else
-		{ // 2c
+		{ 
 			int i = 1;
 			for (i; i < z->numChaves; i++)
 			{
@@ -329,7 +358,8 @@ void removerNo(NO *x, int k)
 				y->chave[j] = x->chave[posicaoK];
 				j = y->numChaves + 1;
 			}
-			while (j < 2 * t - 1)
+			// Enquanto não atingir o número máximo de chaves
+			while (j < MAX_CHAVE)
 			{
 				y->chave[j] = z->chave[posAtualZ];
 				j++;
@@ -363,9 +393,9 @@ void removerNo(NO *x, int k)
 
 		if (subArvore->numChaves == t - 1)
 		{
-
+			// 3a
 			if (posicaoSubArvore + 1 < x->numChaves + 1 && x->filhos[posicaoSubArvore + 1]->numChaves >= t)
-			{ // 3a1
+			{
 				subArvore->numChaves++;
 				subArvore->chave[subArvore->numChaves] = x->chave[posicaoSubArvore];
 				subArvore->filhos[subArvore->numChaves + 1] = x->filhos[posicaoSubArvore + 1]->filhos[1];
@@ -378,7 +408,7 @@ void removerNo(NO *x, int k)
 				x->chave[posicaoSubArvore] = x->filhos[posicaoSubArvore + 1]->chave[1];
 			}
 			else if (posicaoSubArvore > 1 && x->filhos[posicaoSubArvore - 1]->numChaves >= t)
-			{ // 3a2
+			{
 				int ant = x->filhos[posicaoSubArvore - 1]->chave[x->filhos[posicaoSubArvore - 1]->numChaves];
 				x->chave[posicaoSubArvore - 1] = ant;
 				x->filhos[posicaoSubArvore - 1]->numChaves--;
@@ -395,77 +425,78 @@ void removerNo(NO *x, int k)
 				if (x->filhos[posicaoSubArvore + 1])
 					subArvore->filhos[1] = x->filhos[posicaoSubArvore - 1]->filhos[x->filhos[posicaoSubArvore - 1]->numChaves + 1];
 			}
+			// 3b
 			else if (x->filhos[posicaoSubArvore - 1]->numChaves == t - 1 && x->filhos[posicaoSubArvore + 1]->numChaves == t - 1)
-			{ // 3b
+			{
 				if (posicaoSubArvore - 1 >= 1)
 				{
 					int numArvAnterior = x->filhos[posicaoSubArvore - 1]->numChaves;
-					int auxAtual = numArvAnterior + 1;
-					int auxProx = 1;
+					int atual = numArvAnterior + 1;
+					int prox = 1;
 
 					x->filhos[posicaoSubArvore - 1]->numChaves += subArvore->numChaves;
 
-					while (auxProx <= subArvore->numChaves)
+					while (prox <= subArvore->numChaves)
 					{
-						x->filhos[posicaoSubArvore - 1]->chave[auxAtual] = subArvore->chave[auxProx];
-						auxAtual++;
-						auxProx++;
+						x->filhos[posicaoSubArvore - 1]->chave[atual] = subArvore->chave[prox];
+						atual++;
+						prox++;
 					}
-					auxAtual = numArvAnterior;
-					auxProx = 1;
-					while (auxProx + 1 <= subArvore->numChaves + 1)
+					atual = numArvAnterior;
+					prox = 1;
+					while (prox + 1 <= subArvore->numChaves + 1)
 					{
-						x->filhos[posicaoSubArvore - 1]->filhos[auxAtual] = subArvore->filhos[auxProx];
-						auxProx++;
-						auxAtual++;
+						x->filhos[posicaoSubArvore - 1]->filhos[atual] = subArvore->filhos[prox];
+						prox++;
+						atual++;
 					}
-					auxAtual = posicaoSubArvore - 1;
-					while (auxAtual + 1 <= x->numChaves)
+					atual = posicaoSubArvore - 1;
+					while (atual + 1 <= x->numChaves)
 					{
-						x->chave[auxAtual] = x->chave[auxAtual + 1];
-						auxAtual++;
+						x->chave[atual] = x->chave[atual + 1];
+						atual++;
 					}
-					auxAtual = posicaoSubArvore;
-					while (auxAtual + 1 <= x->numChaves + 1)
+					atual = posicaoSubArvore;
+					while (atual + 1 <= x->numChaves + 1)
 					{
-						x->filhos[auxAtual] = x->filhos[auxAtual + 1];
-						auxAtual++;
+						x->filhos[atual] = x->filhos[atual + 1];
+						atual++;
 					}
 					x->numChaves--;
 					x->filhos[posicaoSubArvore - 1]->numChaves--;
 				}
 				else if (posicaoSubArvore + 1 <= x->numChaves + 1)
 				{
-					int auxProx = 1;
+					int prox = 1;
 					int numChavesSubArvoreOriginal = subArvore->numChaves;
-					int auxAtual = subArvore->numChaves;
+					int atual = subArvore->numChaves;
 					subArvore->numChaves += x->filhos[posicaoSubArvore + 1]->numChaves;
-					while (auxProx <= x->filhos[posicaoSubArvore + 1]->numChaves)
+					while (prox <= x->filhos[posicaoSubArvore + 1]->numChaves)
 					{
-						subArvore->chave[auxAtual] = x->filhos[posicaoSubArvore + 1]->chave[auxProx];
-						auxAtual++;
-						auxProx++;
+						subArvore->chave[atual] = x->filhos[posicaoSubArvore + 1]->chave[prox];
+						atual++;
+						prox++;
 					}
-					auxAtual = numChavesSubArvoreOriginal + 1;
-					auxProx = 1;
-					while (auxProx + 1 <= subArvore->numChaves + 1)
+					atual = numChavesSubArvoreOriginal + 1;
+					prox = 1;
+					while (prox + 1 <= subArvore->numChaves + 1)
 					{
-						subArvore->filhos[auxAtual] = x->filhos[posicaoSubArvore + 1]->filhos[auxProx];
-						auxProx++;
-						auxAtual++;
+						subArvore->filhos[atual] = x->filhos[posicaoSubArvore + 1]->filhos[prox];
+						prox++;
+						atual++;
 					}
 
-					auxAtual = posicaoSubArvore;
-					while (auxAtual + 1 <= x->numChaves)
+					atual = posicaoSubArvore;
+					while (atual + 1 <= x->numChaves)
 					{
-						x->chave[auxAtual] = x->chave[auxAtual + 1];
-						auxAtual++;
+						x->chave[atual] = x->chave[atual + 1];
+						atual++;
 					}
-					auxAtual = posicaoSubArvore + 1;
-					while (auxAtual + 1 <= x->numChaves + 1)
+					atual = posicaoSubArvore + 1;
+					while (atual + 1 <= x->numChaves + 1)
 					{
-						x->filhos[auxAtual] = x->filhos[auxAtual + 1];
-						auxAtual++;
+						x->filhos[atual] = x->filhos[atual + 1];
+						atual++;
 					}
 					x->numChaves--;
 					subArvore->numChaves--;
@@ -480,34 +511,37 @@ void removerNo(NO *x, int k)
 
 void removerRaiz(ArvBMais *arv, int k)
 {
-	NO *r = arv->raiz;
-	if (r->numChaves == 0)
+	NO *raiz = arv->raiz;
+
+	if (raiz->numChaves == 0)
 		return;
 	else
-		removerNo(r, k);
-	if (r->numChaves == 0 && !r->folha)
+		removerNo(raiz, k);
+	if (raiz->numChaves == 0 && !raiz->folha)
 	{
-		arv->raiz = r->filhos[1];
-		free(r);
+		arv->raiz = raiz->filhos[1];
+		free(raiz);
 	}
 }
 
 void removerArvore(ArvBMais *arv, int k)
 {
 	int i;
+	// Verifica se a chave k está na raiz da árvore
 	bool excluido = false;
 	for (i = 1; i <= arv->raiz->numChaves; i++)
 	{
+		// Se a chave k estiver na raiz
 		if (arv->raiz->chave[i] == k)
 		{
 			removerRaiz(arv, k);
 			excluido = true;
 		}
 	}
+	// Se a chave k não estiver na raiz
 	if (!excluido)
 		removerNo(arv->raiz, k);
 }
-
 
 void leArquivo(ArvBMais *arv, char arquivoEntrada[], char arquivoSaida[])
 {
@@ -515,10 +549,13 @@ void leArquivo(ArvBMais *arv, char arquivoEntrada[], char arquivoSaida[])
 	int valor;
 
 	FILE *entrada = NULL;
+	// Abre o arquivo de entrada
 	entrada = fopen(arquivoEntrada, "r");
 	FILE *saida = NULL;
+	// Abre o arquivo de saída
 	saida = fopen(arquivoSaida, "w");
 
+	// Verifica se o arquivo foi aberto corretamente e cria a árvore
 	bool arvore = criarArvore(arv);
 
 	if (entrada && arvore)
@@ -527,20 +564,20 @@ void leArquivo(ArvBMais *arv, char arquivoEntrada[], char arquivoSaida[])
 		{
 			switch (operacao)
 			{
-			//Imprimir
+			// Imprimir
 			case 'i':
 				inserirArvore(arv, valor);
 				break;
-			//Remover
+			// Remover
 			case 'r':
 				removerArvore(arv, valor);
 				break;
-			//Printar
+			// Printar
 			case 'p':
 				imprimirArvore(arv, arv->raiz, saida);
 				fprintf(saida, "\n");
 				break;
-			
+			// Finalizar
 			case 'f':
 				return;
 				break;
@@ -558,6 +595,7 @@ int main(int argc, char *argv[])
 		printf("Uso: %s arquivo_entrada.txt arquivo_saida.txt\n", argv[0]);
 		return 1;
 	}
+	// Cria a árvore B+
 	ArvBMais arvore;
 	leArquivo(&arvore, argv[1], argv[2]);
 	return 0;
