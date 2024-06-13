@@ -1,6 +1,7 @@
 // Nome: Kaique de Jesus Pessoa Santos
 // Nº USP: 14677144
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -31,6 +32,7 @@ NO *encontraFilhoDireito(NO *y);
 NO *encontraFilhoEsquerdo(NO *y);
 int retornarPosicao(NO *x, int k);
 NO *encontrarSubArvore(NO *x, int k);
+NO *criaNo(bool folha);
 void split(NO *x, int i, NO *y);
 void inserirNCheia(NO *x, int k);
 void inserirArvore(ArvBMais *arv, int k);
@@ -44,15 +46,14 @@ int main(int argc, char *argv[]);
 // Variável global que armazena a posição da sub-árvore.
 int posicaoSubArvore = 0;
 
-bool criarArvore(ArvBMais *arv)
-{
-	NO *x;
-	if (!(x = (NO *)malloc(sizeof(NO))))
-		return false;
-	x->folha = true;
-	x->numChaves = 0;
-	arv->raiz = x;
-	return true;
+// Função que cria uma árvore B+
+bool criarArvore(ArvBMais *arv) {
+    NO *x = criaNo(true); // Cria um novo nó como raiz e o define como folha
+    if (!x) {
+        return false; // Verifica se a alocação de memória foi bem-sucedida
+    }
+    arv->raiz = x; // Define o nó criado como a raiz da árvore
+    return true;
 }
 
 void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida)
@@ -144,63 +145,66 @@ NO *encontrarSubArvore(NO *x, int k)
 	return subArvore;
 }
 
-// Função que divide o nó y e move a chave mediana para o nó x
-void split(NO *x, int i, NO *y)
-{
-	int j;
-	NO *z;
-	if ((z = (NO *)malloc(sizeof(NO))))
-	{
-		z->folha = y->folha;
-		z->numChaves = t - 1 + y->folha;
+// Função que aloca memória para um novo nó
+NO *criaNo(bool folha) {
+    NO *novoNo = (NO *)malloc(sizeof(NO));
+    novoNo->numChaves = 0;
+    novoNo->folha = folha;
+    return novoNo;
+}
 
-		// Copia as chaves de y para z
-		// Se y for folha
-		if (y->folha)
-		{
-			z->chave[1] = y->chave[t];
-			j = 2;
-		}
-		// Se y não for folha
-		else
-		{
-			j = 1;
-		}
+// Função que copia chaves de y para z
+void copiaChaves(NO *y, NO *z) {
+    int j;
+    if (y->folha) {
+        z->chave[1] = y->chave[t];
+        for (j = 2; j <= t; j++) {
+            z->chave[j] = y->chave[j + t - 1];
+        }
+    } else {
+        for (j = 1; j < t; j++) {
+            z->chave[j] = y->chave[j + t];
+        }
+    }
+}
 
-		for (j; j <= t - 1 + y->folha; j++)
-		{	
-			if (y->folha)
+// Função que copia filhos de y para z
+void copiaFilhos(NO *y, NO *z) {
+    int j;
+    if (!y->folha) {
+        for (j = 1; j <= t; j++) {
+            z->filhos[j] = y->filhos[j + t];
+        }
+    }
+}
 
-				// Copia as chaves de y para z
-				z->chave[j] = y->chave[j + t - 1];
-			else
-				z->chave[j] = y->chave[j + t];
-		}
+// Função que insere o novo nó z no nó pai x
+void insereNovoNo(NO *x, int i, NO *z) {
+    int j;
+    for (j = x->numChaves + 1; j >= i + 1; j--) {
+        x->filhos[j + 1] = x->filhos[j];
+    }
+    x->filhos[i + 1] = z;
 
-		if (!y->folha)
-		{
-			for (j = 1; j <= t; j++)
-				// Copia os filhos de y para z				
-				z->filhos[j] = y->filhos[j + t];
-		}
+    for (j = x->numChaves + 1; j >= i; j--) {
+        x->chave[j + 1] = x->chave[j];
+    }
+    x->chave[i] = x->filhos[i]->chave[t];
+    x->numChaves++;
+}
 
-		y->numChaves = t - 1;
+//Função principal que divide o nó y e move a chave mediana para o nó x
+//Dividia em subfunções
+void split(NO *x, int i, NO *y) {
+    NO *z = criaNo(y->folha);
+    z->numChaves = t - 1 + y->folha;
 
-		for (j = x->numChaves + 1; j >= i + 1; j--)
-		{
-			x->filhos[j + 1] = x->filhos[j];
-		}
+    copiaChaves(y, z);
+    copiaFilhos(y, z);
 
-		x->filhos[i + 1] = z;
+    y->numChaves = t - 1;
 
-		for (j = x->numChaves + 1; j >= i; j--)
-		{
-			x->chave[j + 1] = x->chave[j];
-		}
-
-		x->chave[i] = y->chave[t];
-		x->numChaves++;
-	}
+    insereNovoNo(x, i, z);
 }
 
 // Função que insere a chave k no nó x se a árvore não estiver cheia
