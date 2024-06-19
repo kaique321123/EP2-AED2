@@ -47,24 +47,14 @@ int main(int argc, char *argv[]);
 // Variável global que armazena a posição da sub-árvore.
 int posicaoSubArvore = 0;
 
-bool criarArvore(ArvBMais *arv)
-{
-	NO *x;
-	if (!(x = (NO *)malloc(sizeof(NO))))
-		return false;
-	x->folha = true;
-	x->numChaves = 0;
-	arv->raiz = x;
-	return true;
-bool criarArvore(ArvBMais *arv)
-{
-	NO *x;
-	if (!(x = (NO *)malloc(sizeof(NO))))
-		return false;
-	x->folha = true;
-	x->numChaves = 0;
-	arv->raiz = x;
-	return true;
+// Função para criar uma árvore B+
+bool criarArvore(ArvBMais *arv) {
+    NO *x = criaNo(true);
+    if (x == NULL) {
+        return false;
+    }
+    arv->raiz = x;
+    return true;
 }
 
 void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida)
@@ -163,33 +153,9 @@ NO *criaNo(bool folha)
 	novoNo->numChaves = 0;
 	novoNo->folha = folha;
 	return novoNo;
-NO *criaNo(bool folha)
-{
-	NO *novoNo = (NO *)malloc(sizeof(NO));
-	novoNo->numChaves = 0;
-	novoNo->folha = folha;
-	return novoNo;
 }
 
 // Função que copia chaves de y para z
-void copiaChaves(NO *y, NO *z)
-{
-	int j;
-	if (y->folha)
-	{
-		z->chave[1] = y->chave[t];
-		for (j = 2; j <= t; j++)
-		{
-			z->chave[j] = y->chave[j + t - 1];
-		}
-	}
-	else
-	{
-		for (j = 1; j < t; j++)
-		{
-			z->chave[j] = y->chave[j + t];
-		}
-	}
 void copiaChaves(NO *y, NO *z)
 {
 	int j;
@@ -221,16 +187,6 @@ void copiaFilhos(NO *y, NO *z)
 			z->filhos[j] = y->filhos[j + t];
 		}
 	}
-void copiaFilhos(NO *y, NO *z)
-{
-	int j;
-	if (!y->folha)
-	{
-		for (j = 1; j <= t; j++)
-		{
-			z->filhos[j] = y->filhos[j + t];
-		}
-	}
 }
 
 // Função que insere o novo nó z no nó pai x
@@ -242,21 +198,7 @@ void insereNovoNo(NO *x, int i, NO *z)
 		x->filhos[j + 1] = x->filhos[j];
 	}
 	x->filhos[i + 1] = z;
-void insereNovoNo(NO *x, int i, NO *z)
-{
-	int j;
-	for (j = x->numChaves + 1; j >= i + 1; j--)
-	{
-		x->filhos[j + 1] = x->filhos[j];
-	}
-	x->filhos[i + 1] = z;
 
-	for (j = x->numChaves + 1; j >= i; j--)
-	{
-		x->chave[j + 1] = x->chave[j];
-	}
-	x->chave[i] = x->filhos[i]->chave[t];
-	x->numChaves++;
 	for (j = x->numChaves + 1; j >= i; j--)
 	{
 		x->chave[j + 1] = x->chave[j];
@@ -271,22 +213,12 @@ void split(NO *x, int i, NO *y)
 {
 	NO *z = criaNo(y->folha);
 	z->numChaves = t - 1 + y->folha;
-// Função principal que divide o nó y e move a chave mediana para o nó x
-// Dividida em subfunções para facilitar a compreensão
-void split(NO *x, int i, NO *y)
-{
-	NO *z = criaNo(y->folha);
-	z->numChaves = t - 1 + y->folha;
 
-	copiaChaves(y, z);
-	copiaFilhos(y, z);
 	copiaChaves(y, z);
 	copiaFilhos(y, z);
 
 	y->numChaves = t - 1;
-	y->numChaves = t - 1;
 
-	insereNovoNo(x, i, z);
 	insereNovoNo(x, i, z);
 }
 
@@ -375,15 +307,12 @@ void removerChaveInterna(NO *x, int k, int posicaoK, int j)
 		if (y->numChaves >= t)
 		{
 			// Encontra o maior valor no filho à esquerda (predecessor)
-			// Encontra o maior valor no filho à esquerda (predecessor)
 			NO *predecessor = encontraFilhoDireito(y);
-			// Substitui k pelo predecessor
 			// Substitui k pelo predecessor
 			x->chave[posicaoK] = predecessor->chave[predecessor->numChaves];
 
 			if (y->folha)
 			{
-				// Se y é uma folha, encontra o sucessor no filho à direita e ajusta as chaves
 				// Se y é uma folha, encontra o sucessor no filho à direita e ajusta as chaves
 				NO *sucessor = encontraFilhoEsquerdo(z);
 				sucessor->chave[1] = x->chave[posicaoK];
@@ -391,19 +320,15 @@ void removerChaveInterna(NO *x, int k, int posicaoK, int j)
 			}
 
 			// Remove recursivamente o predecessor
-			// Remove recursivamente o predecessor
 			removerNo(y, predecessor->chave[predecessor->numChaves]);
 		}
-		// Caso 2b: Se o filho à direita de k tem pelo menos t chaves
 		// Caso 2b: Se o filho à direita de k tem pelo menos t chaves
 		else if (z->numChaves >= t)
 		{
 			// Encontra o menor valor no filho à direita (sucessor)
-			// Encontra o menor valor no filho à direita (sucessor)
 			NO *sucessor = encontraFilhoEsquerdo(z);
 			if (z->folha)
 			{
-				// Se z é uma folha, substitui k pelo sucessor e remove o sucessor
 				// Se z é uma folha, substitui k pelo sucessor e remove o sucessor
 				x->chave[posicaoK] = sucessor->chave[2];
 				removerNo(sucessor, sucessor->chave[1]);
@@ -411,16 +336,12 @@ void removerChaveInterna(NO *x, int k, int posicaoK, int j)
 			else
 			{
 				// Substitui k pelo sucessor e remove o sucessor
-				// Substitui k pelo sucessor e remove o sucessor
 				x->chave[posicaoK] = sucessor->chave[1];
 				removerNo(sucessor, sucessor->chave[1]);
 			}
 		}
 		// Caso 2c: Se ambos os filhos de k têm menos de t chaves
-		// Caso 2c: Se ambos os filhos de k têm menos de t chaves
 		else
-		{
-			// Junta y, k e z em um único nó e ajusta as chaves
 		{
 			// Junta y, k e z em um único nó e ajusta as chaves
 			int i = 1;
@@ -449,8 +370,6 @@ void removerChaveInterna(NO *x, int k, int posicaoK, int j)
 			}
 
 			// Transfere chaves de z para y
-
-			// Transfere chaves de z para y
 			while (j < MAX_CHAVE)
 			{
 				y->chave[j] = z->chave[posAtualZ];
@@ -458,7 +377,6 @@ void removerChaveInterna(NO *x, int k, int posicaoK, int j)
 				posAtualZ++;
 			}
 
-			// Ajusta as chaves e filhos de x após a fusão
 			// Ajusta as chaves e filhos de x após a fusão
 			for (j = posicaoK; j <= x->numChaves; j++)
 			{
@@ -471,9 +389,7 @@ void removerChaveInterna(NO *x, int k, int posicaoK, int j)
 			x->numChaves--;
 
 			// Libera a memória do nó z fundido
-			// Libera a memória do nó z fundido
 			free(z);
-			// Remove recursivamente a chave do nó y
 			// Remove recursivamente a chave do nó y
 			removerNo(y, k);
 		}
