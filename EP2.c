@@ -25,6 +25,7 @@ typedef struct
 } ArvBMais;
 
 // FUNÇÕES DE MANIPULAÇÃO DA ÁRVORE B+
+//Criado devido a problemas de chamada de funções que seriam necessárias em diferentes posições
 bool criarArvore(ArvBMais *arv);
 void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida);
 NO *encontraFilhoDireito(NO *y);
@@ -35,6 +36,8 @@ void split(NO *x, int i, NO *y);
 void inserirNCheia(NO *x, int k);
 void inserirArvore(ArvBMais *arv, int k);
 void removerChave(NO *x, int k);
+void removerChaveInterna(NO *x, int k, int posicaoK, int j);
+void corrigirFilhoComMenosChaves(NO *x, int posicaoK, int k);
 void removerNo(NO *x, int k);
 void removerRaiz(ArvBMais *arv, int k);
 void removerArvore(ArvBMais *arv, int k);
@@ -296,27 +299,9 @@ void removerChave(NO *x, int k)
 	}
 }
 
-void removerNo(NO *x, int k)
+void removerChaveInterna(NO *x, int k, int posicaoK, int j)
 {
-	// Encontra a posição da chave k no nó x, se existir
-	int posicaoK = retornarPosicao(x, k);
-	int j;
-
-	// Caso a chave k não esteja no nó folha x, a remoção não pode ser feita
-	if (x->folha && posicaoK == -1)
-		return;
-
-	// Caso 1: Remoção de uma chave que está em um nó folha
-	else if (posicaoK != -1 && x->folha)
-	{
-		// Remove a chave k do nó folha x
-		removerChave(x, k);
-	}
-
-	// Caso 2: Remoção de uma chave que está em um nó interno
-	else if (!x->folha && posicaoK != -1)
-	{
-		NO *y = x->filhos[posicaoK];	 // Filho à esquerda da chave k
+		NO *y = x->filhos[posicaoK];		// Filho à esquerda da chave k
 		NO *z = x->filhos[posicaoK + 1]; // Filho à direita da chave k
 
 		// Caso 2a: Se o filho à esquerda de k tem pelo menos t chaves
@@ -409,135 +394,163 @@ void removerNo(NO *x, int k)
 			// Remove recursivamente a chave do nó y
 			removerNo(y, k);
 		}
-	}
+	
+}
 
-	// Caso 3: A chave k não está no nó x e o nó x não é folha
+void corrigirFilhoComMenosChaves(NO *x, int posicaoK, int k)
+{
+	int i = 1;
+	NO *subArvore = encontrarSubArvore(x, k); // Encontra a subárvore que deve conter k
+
+	if (!subArvore)
+		return;
+
+	// Se a subárvore tem menos de t chaves, precisa balancear a árvore
+	if (subArvore->numChaves == t - 1)
+	{
+		// Caso 3a: Empresta de um irmão com mais de t-1 chaves
+		if (posicaoSubArvore + 1 < x->numChaves + 1 && x->filhos[posicaoSubArvore + 1]->numChaves >= t)
+		{
+			subArvore->numChaves++;
+			subArvore->chave[subArvore->numChaves] = x->chave[posicaoSubArvore];
+			subArvore->filhos[subArvore->numChaves + 1] = x->filhos[posicaoSubArvore + 1]->filhos[1];
+			int aux;
+			for (aux = 1; aux < x->filhos[posicaoSubArvore + 1]->numChaves; aux++)
+				x->filhos[posicaoSubArvore + 1]->chave[aux] = x->filhos[posicaoSubArvore + 1]->chave[aux + 1];
+			for (aux = 1; aux <= x->filhos[posicaoSubArvore + 1]->numChaves; aux++)
+				x->filhos[posicaoSubArvore + 1]->filhos[aux + 1] = x->filhos[posicaoSubArvore + 1]->filhos[aux];
+			x->filhos[posicaoSubArvore + 1]->numChaves--;
+			x->chave[posicaoSubArvore] = x->filhos[posicaoSubArvore + 1]->chave[1];
+		}
+		// Caso 3b: Empresta de um irmão com mais de t-1 chaves
+		else if (posicaoSubArvore > 1 && x->filhos[posicaoSubArvore - 1]->numChaves >= t)
+		{
+			int ant = x->filhos[posicaoSubArvore - 1]->chave[x->filhos[posicaoSubArvore - 1]->numChaves];
+			x->chave[posicaoSubArvore - 1] = ant;
+			x->filhos[posicaoSubArvore - 1]->numChaves--;
+			subArvore->numChaves++;
+			int aux;
+			for (aux = subArvore->numChaves; aux >= 1; aux--)
+				subArvore->chave[aux] = subArvore->chave[aux - 1];
+			if (x->filhos[posicaoSubArvore + 1])
+				subArvore->chave[1] = x->chave[posicaoSubArvore - 1];
+			aux = subArvore->numChaves + 1;
+			for (aux; aux <= 2; aux--)
+				subArvore->filhos[aux] = subArvore->filhos[aux - 1];
+
+			if (x->filhos[posicaoSubArvore + 1])
+				subArvore->filhos[1] = x->filhos[posicaoSubArvore - 1]->filhos[x->filhos[posicaoSubArvore - 1]->numChaves + 1];
+		}
+		// Caso 3c: Junta o nó com um irmão
+		else if (x->filhos[posicaoSubArvore - 1]->numChaves == t - 1 && x->filhos[posicaoSubArvore + 1]->numChaves == t - 1)
+		{
+			if (posicaoSubArvore - 1 >= 1)
+			{
+				int numArvAnterior = x->filhos[posicaoSubArvore - 1]->numChaves;
+				int atual = numArvAnterior + 1;
+				int prox = 1;
+
+				x->filhos[posicaoSubArvore - 1]->numChaves += subArvore->numChaves;
+
+				while (prox <= subArvore->numChaves)
+				{
+					x->filhos[posicaoSubArvore - 1]->chave[atual] = subArvore->chave[prox];
+					atual++;
+					prox++;
+				}
+				atual = numArvAnterior;
+				prox = 1;
+				while (prox + 1 <= subArvore->numChaves + 1)
+				{
+					x->filhos[posicaoSubArvore - 1]->filhos[atual] = subArvore->filhos[prox];
+					prox++;
+					atual++;
+				}
+				atual = posicaoSubArvore - 1;
+				while (atual + 1 <= x->numChaves)
+				{
+					x->chave[atual] = x->chave[atual + 1];
+					atual++;
+				}
+				atual = posicaoSubArvore;
+				while (atual + 1 <= x->numChaves + 1)
+				{
+					x->filhos[atual] = x->filhos[atual + 1];
+					atual++;
+				}
+				x->numChaves--;
+				x->filhos[posicaoSubArvore - 1]->numChaves--;
+			}
+			else if (posicaoSubArvore + 1 <= x->numChaves + 1)
+			{
+				int prox = 1;
+				int numChavesSubArvoreOriginal = subArvore->numChaves;
+				int atual = subArvore->numChaves;
+				subArvore->numChaves += x->filhos[posicaoSubArvore + 1]->numChaves;
+				while (prox <= x->filhos[posicaoSubArvore + 1]->numChaves)
+				{
+					subArvore->chave[atual] = x->filhos[posicaoSubArvore + 1]->chave[prox];
+					atual++;
+					prox++;
+				}
+				atual = numChavesSubArvoreOriginal + 1;
+				prox = 1;
+				while (prox + 1 <= subArvore->numChaves + 1)
+				{
+					subArvore->filhos[atual] = x->filhos[posicaoSubArvore + 1]->filhos[prox];
+					prox++;
+					atual++;
+				}
+
+				atual = posicaoSubArvore;
+				while (atual + 1 <= x->numChaves)
+				{
+					x->chave[atual] = x->chave[atual + 1];
+					atual++;
+				}
+				atual = posicaoSubArvore + 1;
+				while (atual + 1 <= x->numChaves + 1)
+				{
+					x->filhos[atual] = x->filhos[atual + 1];
+					atual++;
+				}
+				x->numChaves--;
+				subArvore->numChaves--;
+			}
+		}
+		else
+			return;
+	}
+	// Remove recursivamente a chave da subárvore apropriada
+	removerNo(subArvore, k);
+}
+
+void removerNo(NO *x, int k)
+{
+	// Encontra a posição da chave k no nó x, se existir
+	int posicaoK = retornarPosicao(x, k);
+	int j;
+
+	// Caso a chave k não esteja no nó folha x, a remoção não pode ser feita
+	if (x->folha && posicaoK == -1)
+		return;
+
+	// Caso 1: A chave está em um nó folha
+	else if (posicaoK != -1 && x->folha)
+	{
+		// Remove a chave k do nó folha x
+		removerChave(x, k);
+	}
+	// Caso 2: A chave está em um nó interno
+	else if (!x->folha && posicaoK != -1)
+	{
+		removerChaveInterna(x, k, posicaoK, j);
+	}
+	// Caso 3: A chave não está presente no nó (a chave pode estar em um dos filhos)
 	else if (!x->folha && posicaoK == -1)
 	{
-		int i = 1;
-		NO *subArvore = encontrarSubArvore(x, k); // Encontra a subárvore que deve conter k
 
-		if (!subArvore)
-			return;
-
-		// Se a subárvore tem menos de t chaves, precisa balancear a árvore
-		if (subArvore->numChaves == t - 1)
-		{
-			// Caso 3a: Empresta de um irmão com mais de t-1 chaves
-			if (posicaoSubArvore + 1 < x->numChaves + 1 && x->filhos[posicaoSubArvore + 1]->numChaves >= t)
-			{
-				subArvore->numChaves++;
-				subArvore->chave[subArvore->numChaves] = x->chave[posicaoSubArvore];
-				subArvore->filhos[subArvore->numChaves + 1] = x->filhos[posicaoSubArvore + 1]->filhos[1];
-				int aux;
-				for (aux = 1; aux < x->filhos[posicaoSubArvore + 1]->numChaves; aux++)
-					x->filhos[posicaoSubArvore + 1]->chave[aux] = x->filhos[posicaoSubArvore + 1]->chave[aux + 1];
-				for (aux = 1; aux <= x->filhos[posicaoSubArvore + 1]->numChaves; aux++)
-					x->filhos[posicaoSubArvore + 1]->filhos[aux + 1] = x->filhos[posicaoSubArvore + 1]->filhos[aux];
-				x->filhos[posicaoSubArvore + 1]->numChaves--;
-				x->chave[posicaoSubArvore] = x->filhos[posicaoSubArvore + 1]->chave[1];
-			}
-			// Caso 3b: Empresta de um irmão com mais de t-1 chaves
-			else if (posicaoSubArvore > 1 && x->filhos[posicaoSubArvore - 1]->numChaves >= t)
-			{
-				int ant = x->filhos[posicaoSubArvore - 1]->chave[x->filhos[posicaoSubArvore - 1]->numChaves];
-				x->chave[posicaoSubArvore - 1] = ant;
-				x->filhos[posicaoSubArvore - 1]->numChaves--;
-				subArvore->numChaves++;
-				int aux;
-				for (aux = subArvore->numChaves; aux >= 1; aux--)
-					subArvore->chave[aux] = subArvore->chave[aux - 1];
-				if (x->filhos[posicaoSubArvore + 1])
-					subArvore->chave[1] = x->chave[posicaoSubArvore - 1];
-				aux = subArvore->numChaves + 1;
-				for (aux; aux <= 2; aux--)
-					subArvore->filhos[aux] = subArvore->filhos[aux - 1];
-
-				if (x->filhos[posicaoSubArvore + 1])
-					subArvore->filhos[1] = x->filhos[posicaoSubArvore - 1]->filhos[x->filhos[posicaoSubArvore - 1]->numChaves + 1];
-			}
-			// Caso 3c: Junta o nó com um irmão
-			else if (x->filhos[posicaoSubArvore - 1]->numChaves == t - 1 && x->filhos[posicaoSubArvore + 1]->numChaves == t - 1)
-			{
-				if (posicaoSubArvore - 1 >= 1)
-				{
-					int numArvAnterior = x->filhos[posicaoSubArvore - 1]->numChaves;
-					int atual = numArvAnterior + 1;
-					int prox = 1;
-
-					x->filhos[posicaoSubArvore - 1]->numChaves += subArvore->numChaves;
-
-					while (prox <= subArvore->numChaves)
-					{
-						x->filhos[posicaoSubArvore - 1]->chave[atual] = subArvore->chave[prox];
-						atual++;
-						prox++;
-					}
-					atual = numArvAnterior;
-					prox = 1;
-					while (prox + 1 <= subArvore->numChaves + 1)
-					{
-						x->filhos[posicaoSubArvore - 1]->filhos[atual] = subArvore->filhos[prox];
-						prox++;
-						atual++;
-					}
-					atual = posicaoSubArvore - 1;
-					while (atual + 1 <= x->numChaves)
-					{
-						x->chave[atual] = x->chave[atual + 1];
-						atual++;
-					}
-					atual = posicaoSubArvore;
-					while (atual + 1 <= x->numChaves + 1)
-					{
-						x->filhos[atual] = x->filhos[atual + 1];
-						atual++;
-					}
-					x->numChaves--;
-					x->filhos[posicaoSubArvore - 1]->numChaves--;
-				}
-				else if (posicaoSubArvore + 1 <= x->numChaves + 1)
-				{
-					int prox = 1;
-					int numChavesSubArvoreOriginal = subArvore->numChaves;
-					int atual = subArvore->numChaves;
-					subArvore->numChaves += x->filhos[posicaoSubArvore + 1]->numChaves;
-					while (prox <= x->filhos[posicaoSubArvore + 1]->numChaves)
-					{
-						subArvore->chave[atual] = x->filhos[posicaoSubArvore + 1]->chave[prox];
-						atual++;
-						prox++;
-					}
-					atual = numChavesSubArvoreOriginal + 1;
-					prox = 1;
-					while (prox + 1 <= subArvore->numChaves + 1)
-					{
-						subArvore->filhos[atual] = x->filhos[posicaoSubArvore + 1]->filhos[prox];
-						prox++;
-						atual++;
-					}
-
-					atual = posicaoSubArvore;
-					while (atual + 1 <= x->numChaves)
-					{
-						x->chave[atual] = x->chave[atual + 1];
-						atual++;
-					}
-					atual = posicaoSubArvore + 1;
-					while (atual + 1 <= x->numChaves + 1)
-					{
-						x->filhos[atual] = x->filhos[atual + 1];
-						atual++;
-					}
-					x->numChaves--;
-					subArvore->numChaves--;
-				}
-			}
-			else
-				return;
-		}
-		// Remove recursivamente a chave da subárvore apropriada
-		removerNo(subArvore, k);
+		corrigirFilhoComMenosChaves(x, posicaoK, k);
 	}
 }
 
