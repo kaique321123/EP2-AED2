@@ -392,79 +392,93 @@ void removerChaveInterna(NO *x, int k, int posicaoK, int j)
 	}
 }
 
+void moverChavesFilhosAnterior(NO *anterior, NO *subArvore)
+{
+	int numChavesAnterior = anterior->numChaves;
+	int atual = numChavesAnterior + 1;
+	int prox = 1;
+
+	anterior->numChaves += subArvore->numChaves;
+
+	while (prox <= subArvore->numChaves)
+	{
+		anterior->chave[atual] = subArvore->chave[prox];
+		atual++;
+		prox++;
+	}
+
+	atual = numChavesAnterior;
+	prox = 1;
+
+	while (prox + 1 <= subArvore->numChaves + 1)
+	{
+		anterior->filhos[atual] = subArvore->filhos[prox];
+		prox++;
+		atual++;
+	}
+}
+
+void moverChavesFilhosProximo(NO *subArvore, NO *proximo)
+{
+	int numChavesSubArvoreOriginal = subArvore->numChaves;
+	int atual = subArvore->numChaves;
+	int prox = 1;
+
+	subArvore->numChaves += proximo->numChaves;
+
+	while (prox <= proximo->numChaves)
+	{
+		subArvore->chave[atual] = proximo->chave[prox];
+		atual++;
+		prox++;
+	}
+
+	atual = numChavesSubArvoreOriginal + 1;
+	prox = 1;
+
+	while (prox + 1 <= subArvore->numChaves + 1)
+	{
+		subArvore->filhos[atual] = proximo->filhos[prox];
+		prox++;
+		atual++;
+	}
+}
+
+void removerChaveFilho(NO *x, int posicao)
+{
+	int atual = posicao;
+
+	while (atual + 1 <= x->numChaves)
+	{
+		x->chave[atual] = x->chave[atual + 1];
+		atual++;
+	}
+
+	atual = posicao + 1;
+
+	while (atual + 1 <= x->numChaves + 1)
+	{
+		x->filhos[atual] = x->filhos[atual + 1];
+		atual++;
+	}
+
+	x->numChaves--;
+}
+
 void juntaNos(NO *x, NO *subArvore, int posicaoSubArvore)
 {
 	if (posicaoSubArvore - 1 >= 1)
 	{
-		int numArvAnterior = x->filhos[posicaoSubArvore - 1]->numChaves;
-		int atual = numArvAnterior + 1;
-		int prox = 1;
-
-		x->filhos[posicaoSubArvore - 1]->numChaves += subArvore->numChaves;
-
-		while (prox <= subArvore->numChaves)
-		{
-			x->filhos[posicaoSubArvore - 1]->chave[atual] = subArvore->chave[prox];
-			atual++;
-			prox++;
-		}
-		atual = numArvAnterior;
-		prox = 1;
-		while (prox + 1 <= subArvore->numChaves + 1)
-		{
-			x->filhos[posicaoSubArvore - 1]->filhos[atual] = subArvore->filhos[prox];
-			prox++;
-			atual++;
-		}
-		atual = posicaoSubArvore - 1;
-		while (atual + 1 <= x->numChaves)
-		{
-			x->chave[atual] = x->chave[atual + 1];
-			atual++;
-		}
-		atual = posicaoSubArvore;
-		while (atual + 1 <= x->numChaves + 1)
-		{
-			x->filhos[atual] = x->filhos[atual + 1];
-			atual++;
-		}
-		x->numChaves--;
-		x->filhos[posicaoSubArvore - 1]->numChaves--;
+		NO *anterior = x->filhos[posicaoSubArvore - 1];
+		moverChavesFilhosAnterior(anterior, subArvore);
+		removerChaveFilho(x, posicaoSubArvore - 1);
+		anterior->numChaves--;
 	}
 	else if (posicaoSubArvore + 1 <= x->numChaves + 1)
 	{
-		int prox = 1;
-		int numChavesSubArvoreOriginal = subArvore->numChaves;
-		int atual = subArvore->numChaves;
-		subArvore->numChaves += x->filhos[posicaoSubArvore + 1]->numChaves;
-		while (prox <= x->filhos[posicaoSubArvore + 1]->numChaves)
-		{
-			subArvore->chave[atual] = x->filhos[posicaoSubArvore + 1]->chave[prox];
-			atual++;
-			prox++;
-		}
-		atual = numChavesSubArvoreOriginal + 1;
-		prox = 1;
-		while (prox + 1 <= subArvore->numChaves + 1)
-		{
-			subArvore->filhos[atual] = x->filhos[posicaoSubArvore + 1]->filhos[prox];
-			prox++;
-			atual++;
-		}
-
-		atual = posicaoSubArvore;
-		while (atual + 1 <= x->numChaves)
-		{
-			x->chave[atual] = x->chave[atual + 1];
-			atual++;
-		}
-		atual = posicaoSubArvore + 1;
-		while (atual + 1 <= x->numChaves + 1)
-		{
-			x->filhos[atual] = x->filhos[atual + 1];
-			atual++;
-		}
-		x->numChaves--;
+		NO *proximo = x->filhos[posicaoSubArvore + 1];
+		moverChavesFilhosProximo(subArvore, proximo);
+		removerChaveFilho(x, posicaoSubArvore);
 		subArvore->numChaves--;
 	}
 }
