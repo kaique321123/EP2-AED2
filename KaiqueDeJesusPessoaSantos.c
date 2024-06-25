@@ -6,9 +6,9 @@
 #include <stdbool.h>
 
 // Define a ordem mínima da árvore B+.
-// Cada nó pode ter no máximo 2t - 1 chaves e no mínimo t - 1 chaves.
 #define t 3
 
+// Cada nó pode ter no máximo 2t - 1 chaves e no mínimo t - 1 chaves.
 #define MAX_CHAVE 2 * t - 1
 
 typedef struct str_no
@@ -24,27 +24,11 @@ typedef struct
 	NO *raiz; // ponteiro para a raiz da árvore
 } ArvBMais;
 
-// FUNÇÕES DE MANIPULAÇÃO DA ÁRVORE B+
-// Criado devido a problemas de chamada de funções que seriam necessárias em diferentes posições
+
+// Funções adicionadas aqui devido a problemas de chamada de funções que seriam necessárias em diferentes posições
 NO *criaNo(bool folha);
-bool criarArvore(ArvBMais *arv);
-void imprimirArvore(ArvBMais *arv, NO *x, FILE *saida);
-NO *encontraFilhoDireito(NO *y);
-NO *encontraFilhoEsquerdo(NO *y);
-int retornarPosicao(NO *x, int k);
-NO *encontrarSubArvore(NO *x, int k);
-void copiaChavesEFilhos(NO *y, NO *z);
-void split(NO *x, int i, NO *y);
-void inserirNCheia(NO *x, int k);
-void inserirArvore(ArvBMais *arv, int k);
-void removerChave(NO *x, int k);
-void removerChaveInterna(NO *x, int k, int posicaoK, int j);
-void corrigirFilhoComMenosChaves(NO *x, int posicaoK, int k);
 void removerNo(NO *x, int k);
-void removerRaiz(ArvBMais *arv, int k);
-void removerArvore(ArvBMais *arv, int k);
-void leArquivo(ArvBMais *arv, char arquivoEntrada[], char arquivoSaida[]);
-int main(int argc, char *argv[]);
+
 
 // Variável global que armazena a posição da sub-árvore.
 int posicaoSubArvore = 0;
@@ -206,7 +190,6 @@ void insereNovoNo(NO *x, int i, NO *z)
 }
 
 // Função principal que divide o nó y e move a chave mediana para o nó x
-// Dividida em subfunções para facilitar a compreensão
 void split(NO *x, int i, NO *y)
 {
 	NO *z = criaNo(y->folha);
@@ -220,7 +203,7 @@ void split(NO *x, int i, NO *y)
 }
 
 // Função que insere a chave k no nó x se a árvore não estiver cheia
-void inserirNCheia(NO *x, int k)
+void insereNaoCheia(NO *x, int k)
 {
 	int i = x->numChaves;
 	if (x->folha)
@@ -248,7 +231,7 @@ void inserirNCheia(NO *x, int k)
 			if (k > x->chave[i])
 				i++;
 		}
-		inserirNCheia(x->filhos[i], k);
+		insereNaoCheia(x->filhos[i], k);
 	}
 }
 
@@ -268,11 +251,11 @@ void inserirArvore(ArvBMais *arv, int k)
 			s->numChaves = 0;
 			s->filhos[1] = raiz;
 			split(s, 1, raiz);
-			inserirNCheia(s, k);
+			insereNaoCheia(s, k);
 		}
 	}
 	else
-		inserirNCheia(raiz, k);
+		insereNaoCheia(raiz, k);
 }
 
 // Função que remove a chave k do nó x
